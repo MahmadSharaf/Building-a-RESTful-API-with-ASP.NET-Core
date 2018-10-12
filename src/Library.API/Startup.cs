@@ -76,6 +76,7 @@ namespace Library.API
                     .ForMember(dest => dest.Age, opt => opt.MapFrom(src =>
                      src.DateOfBirth.GetCurrentAge()));
                 cfg.CreateMap<Entities.Book, Model.BookDTO>();
+                cfg.CreateMap< Model.AuthorForCreationDTO, Entities.Author>(); //This mapping is used for input so the source is from the request to the repo
             });
 
             libraryContext.EnsureSeedDataForContext();

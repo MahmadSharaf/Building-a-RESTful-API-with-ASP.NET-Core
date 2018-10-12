@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace Library.API.Controllers
 {
     [Route("api/authors/{authorId}/books")]
-    public class BooksController:Controller
+    public class BooksController : Controller
     {
         private ILibraryRepository _libraryRepository;
 
@@ -33,12 +33,12 @@ namespace Library.API.Controllers
         }
 
         [HttpGet("{bookId}")]
-        public IActionResult GetBookForAuthor(Guid authorId,Guid bookId)
+        public IActionResult GetBookForAuthor(Guid authorId, Guid bookId)
         {
             if (!_libraryRepository.AuthorExists(authorId))
                 return NotFound();
 
-            var bookForAuthorFromRepo = _libraryRepository.GetBookForAuthor(authorId,bookId);
+            var bookForAuthorFromRepo = _libraryRepository.GetBookForAuthor(authorId, bookId);
 
             if (bookForAuthorFromRepo == null)
                 return NotFound();
@@ -46,5 +46,12 @@ namespace Library.API.Controllers
 
             return Ok(book);
         }
+
+        //[HttpPost("{book}")]
+        //public IActionResult AddBookForAuthor(Guid authorId, BookDTO book)
+        //{
+        //    var bookForAuthorToRepo = _libraryRepository.AddBookForAuthor(authorId, book)
+
+        //}
     }
 }
