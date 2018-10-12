@@ -1,4 +1,5 @@
-﻿using Library.API.Helpers;
+﻿using AutoMapper;
+using Library.API.Helpers;
 using Library.API.Model;
 using Library.API.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -6,6 +7,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+
+// Automapper has to be used to map between DTOs and Entities because implement validation attributes or data annotations used to validate inpute on a class that returns data does not make sense
 
 namespace Library.API.Controllers
 {   [Route("api/authors")]
@@ -23,18 +26,8 @@ namespace Library.API.Controllers
         {
             var authorsFromRepo = _libraryRepository.GetAuthors();
 
-            var authors = new List<AuthorDTO>();
+            var authors = Mapper.Map<IEnumerable < AuthorDTO >> (authorsFromRepo);
 
-            foreach (var author in authorsFromRepo)
-            {
-                authors.Add(new AuthorDTO()
-                {
-                    Id = author.Id,
-                    Name = $"{ author.FirstName } {author.LastName}",
-                    Genre = author.Genre,
-                    Age = author.DateOfBirth.GetCurrentAge()
-                });
-            }
             //Serialize the result as JSON
             return new JsonResult(authors); // JsonResult returns the given object as JSON
         }

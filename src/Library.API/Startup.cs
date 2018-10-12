@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Library.API.Services;
 using Library.API.Entities;
 using Microsoft.EntityFrameworkCore;
+using Library.API.Helpers;
 
 namespace Library.API
 {
@@ -51,6 +52,21 @@ namespace Library.API
             {
                 app.UseExceptionHandler();
             }
+
+            // This is method is used to create mapping, it accepts an action on a mapping configuration as a parameter
+            AutoMapper.Mapper.Initialize(cfg =>
+            {   //           Source             Destination
+                cfg.CreateMap<Entities.Author, Model.AuthorDTO>()
+                    //Projections transform a source to a destination beyond flattening the object model.
+                    // This specified using custom member mapping
+                    .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
+                     $"{src.FirstName} {src.LastName}"))
+                    .ForMember(dest => dest.Age, opt => opt.MapFrom(src =>
+                     src.DateOfBirth.GetCurrentAge()));
+                
+                
+                
+            });
 
             libraryContext.EnsureSeedDataForContext();
 
