@@ -37,10 +37,16 @@ namespace Library.API.Controllers
         {
             var authorFromRepo = _libraryRepository.GetAuthor(id);
 
-            var author = Mapper.Map<AuthorDTO>(authorFromRepo);
+            if (authorFromRepo == null)
+            {
+                return NotFound();
+            }
 
+            var author = Mapper.Map<AuthorDTO>(authorFromRepo);
+              
+            return Ok(author);
             //Serialize the result as JSON
-            return new JsonResult(author); // JsonResult returns the given object as JSON
+            //return new JsonResult(author); // JsonResult returns the given object as JSON
         }
     }
 }
