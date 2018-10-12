@@ -1,4 +1,6 @@
-﻿using Library.API.Services;
+﻿using Library.API.Helpers;
+using Library.API.Model;
+using Library.API.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -7,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Library.API.Controllers
 {   [Route("api/authors")]
-    public class AuthorsController :Controller
+    public class AuthorsController : Controller
     {
         private ILibraryRepository _libraryRepository;
 
@@ -20,8 +22,21 @@ namespace Library.API.Controllers
         public IActionResult GetAuthors() //IActionResult defines a contract that represents the result of an action method
         {
             var authorsFromRepo = _libraryRepository.GetAuthors();
+
+            var authors = new List<AuthorDTO>();
+
+            foreach (var author in authorsFromRepo)
+            {
+                authors.Add(new AuthorDTO()
+                {
+                    Id = author.Id,
+                    Name = $"{ author.FirstName } {author.LastName}",
+                    Genre = author.Genre,
+                    Age = author.DateOfBirth.GetCurrentAge()
+                });
+            }
             //Serialize the result as JSON
-            return new JsonResult(authorsFromRepo); // JsonResult returns the given object as JSON
+            return new JsonResult(authors); // JsonResult returns the given object as JSON
         }
 
         [HttpGet("{id}")]
