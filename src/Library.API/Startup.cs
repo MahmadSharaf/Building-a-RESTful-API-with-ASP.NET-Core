@@ -49,8 +49,15 @@ namespace Library.API
                 app.UseDeveloperExceptionPage();
             }
             else
-            {
-                app.UseExceptionHandler();
+            {   
+                app.UseExceptionHandler(appBuilder =>   // This creates a global message for a specific status code
+                {
+                    appBuilder.Run(async context => // This write the request response pipeline
+                    {
+                        context.Response.StatusCode = 500; // Status code number
+                        await context.Response.WriteAsync("An unexpected fault happend. Try again later."); // The message for that status code
+                    });
+                });
             }
 
             // This is method is used to create mapping, it accepts an action on a mapping configuration as a parameter
@@ -63,14 +70,16 @@ namespace Library.API
                      $"{src.FirstName} {src.LastName}"))
                     .ForMember(dest => dest.Age, opt => opt.MapFrom(src =>
                      src.DateOfBirth.GetCurrentAge()));
-                
-                
-                
             });
 
             libraryContext.EnsureSeedDataForContext();
 
             app.UseMvc(); 
+        }
+
+        private void appBuilder(IApplicationBuilder obj)
+        {
+            throw new NotImplementedException();
         }
     }
 }
