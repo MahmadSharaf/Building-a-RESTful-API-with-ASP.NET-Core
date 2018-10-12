@@ -36,8 +36,11 @@ namespace Library.API.Controllers
         public IActionResult GetAuthor(Guid id) //IActionResult defines a contract that represents the result of an action method
         {
             var authorFromRepo = _libraryRepository.GetAuthor(id);
+
+            var author = Mapper.Map<AuthorDTO>(authorFromRepo);
+
             //Serialize the result as JSON
-            return new JsonResult(authorFromRepo); // JsonResult returns the given object as JSON
+            return new JsonResult(author); // JsonResult returns the given object as JSON
         }
     }
 }
