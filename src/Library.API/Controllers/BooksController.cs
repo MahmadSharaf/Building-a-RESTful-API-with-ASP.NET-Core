@@ -68,21 +68,48 @@ namespace Library.API.Controllers
                 bookToReturn);//the content that will be returned by the response body
         }
 
-        [HttpDelete("{id}")]
-        public IActionResult DeleteBookForAuthor(Guid authorId, Guid id)
+        [HttpDelete("{bookId}")]
+        public IActionResult DeleteBookForAuthor(Guid authorId, Guid bookId)
         {
             if (!_libraryRepository.AuthorExists(authorId))
                 return NotFound();
 
-            var bookForAuthorFromRepo = _libraryRepository.GetBookForAuthor(authorId, id);
+            var bookForAuthorFromRepo = _libraryRepository.GetBookForAuthor(authorId, bookId);
             if (bookForAuthorFromRepo == null)
                 return NotFound();
             _libraryRepository.DeleteBook(bookForAuthorFromRepo);
 
             if (!_libraryRepository.Save())
-                throw new Exception($"The Book with ID {id} for author {authorId} failed on saving");
+                throw new Exception($"The Book with ID {bookId} for author {authorId} failed on saving");
 
             return NoContent();
+        }
+
+        [HttpPut("{bookId}")]
+        public IActionResult UpdateBookForAuthor(Guid authorId, Guid bookId,
+            [FromBody] BookForUpdate book)
+        {
+            if (book == null)
+                return BadRequest();
+
+            var bookFromRepo = _libraryRepository.GetBookForAuthor(authorId, bookId);
+
+            if (!_libraryRepository.AuthorExists(authorId))
+                return NotFound();
+
+            var bookForAuthorFromRepo = _libraryRepository.GetBookForAuthor(authorId, bookId);
+            if (bookForAuthorFromRepo == null)
+                return NotFound();
+
+            Mapper.Map(book, bookForAuthorFromRepo);
+
+            _libraryRepository.UpdateBookForAuthor(bookForAuthorFromRepo);
+
+            if (!_libraryRepository.Save())
+                throw new Exception($"Updating book {bookId} for author {authorId} failed on saving");
+
+            return NoContent();
+         
         }
     }
 }

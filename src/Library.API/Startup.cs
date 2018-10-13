@@ -79,6 +79,7 @@ namespace Library.API
                 cfg.CreateMap<Entities.Book, Model.BookDTO>();
                 cfg.CreateMap< Model.AuthorForCreationDTO, Entities.Author>(); //This mapping is used for input so the source is from the request to the repo
                 cfg.CreateMap<Model.BookForCreationDTO, Entities.Book>();
+                cfg.CreateMap<Model.BookForUpdate, Entities.Book>();
             });
 
             libraryContext.EnsureSeedDataForContext();
