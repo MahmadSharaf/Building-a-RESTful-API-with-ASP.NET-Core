@@ -51,7 +51,7 @@ namespace Library.API.Controllers
             //return new JsonResult(author); // JsonResult returns the given object as JSON
         }
 
-                                        //[FromBody is used to serialize the data from the request into the specified type
+        [HttpPost]                                //[FromBody is used to serialize the data from the request into the specified type
         public IActionResult CreateAuthor([FromBody] AuthorForCreationDTO author)
         {
             if (author == null)
@@ -88,6 +88,23 @@ namespace Library.API.Controllers
                 return new StatusCodeResult(StatusCodes.Status409Conflict);
 
             return NotFound();
+        }
+
+        [HttpDelete("{authorid}")]
+        public IActionResult DeleteAuthor(Guid authorId)
+        {
+            if (authorId == null)
+                return NotFound();
+
+            var authorToDelete = _libraryRepository.GetAuthor(authorId);
+
+            if (authorId == null)
+                return NotFound();
+            _libraryRepository.DeleteAuthor(authorToDelete);
+            if (!_libraryRepository.Save())
+                throw new Exception($"The author with ID {authorId} failed while saving");
+
+            return NoContent();
         }
     }
 }
