@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Library.API.Model
 {
-    public class BookForUpdate
+    public class BookForUpdateDTO
     {
         public string Title { get; set; }
         public string Description { get; set; }

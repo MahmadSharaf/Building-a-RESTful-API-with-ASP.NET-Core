@@ -2,6 +2,7 @@
 using Library.API.Entities;
 using Library.API.Model;
 using Library.API.Services;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -87,7 +88,7 @@ namespace Library.API.Controllers
 
         [HttpPut("{bookId}")]
         public IActionResult UpdateBookForAuthor(Guid authorId, Guid bookId,
-            [FromBody] BookForUpdate book)
+            [FromBody] BookForUpdateDTO book)
         {
             if (book == null)
                 return BadRequest();
@@ -123,6 +124,50 @@ namespace Library.API.Controllers
 
             return NoContent();
          
+        }
+
+        [HttpPatch("{bookId}")]
+        public IActionResult PartiallyUpdateBookForAuthor(Guid authorId, Guid bookId,
+            [FromBody] JsonPatchDocument<BookForUpdateDTO> patchDoc)//JsonPatchDocument is used because the content header is Json-patch
+        {
+            if (patchDoc == null)
+                return BadRequest();
+
+            var bookForAuthorFromRepo = _libraryRepository.GetBookForAuthor(authorId, bookId);
+
+            if (bookForAuthorFromRepo == null)
+            {
+                var bookDto = new BookForUpdateDTO();
+                patchDoc.ApplyTo(bookDto); //To apply the changes to the bookDto
+
+                var bookToAdd = Mapper.Map<Book>(bookDto);
+                bookToAdd.Id = bookId;
+
+                _libraryRepository.AddBookForAuthor(authorId, bookToAdd);
+
+                if (!_libraryRepository.Save())
+                    throw new Exception($"Upserting Book {bookId} for author {authorId} failed while saving");
+
+                var bookToReturn = Mapper.Map<BookDTO>(bookToAdd);
+                return CreatedAtRoute("GetBookForAuthor",
+                    new { authorId = authorId, bookId, bookToReturn.Id },
+                    bookToReturn);
+            }
+
+            var bookToPatch = Mapper.Map<BookForUpdateDTO>(bookForAuthorFromRepo);
+
+            patchDoc.ApplyTo(bookToPatch);
+
+            //addValidation
+
+            Mapper.Map(bookToPatch, bookForAuthorFromRepo);
+
+            _libraryRepository.UpdateBookForAuthor(bookForAuthorFromRepo);
+
+            if (!_libraryRepository.Save())
+                throw new Exception($"Patching book {bookId} for author {authorId} failed on saving");
+
+            return NoContent();
         }
     }
 }
