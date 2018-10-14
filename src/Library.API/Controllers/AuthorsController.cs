@@ -23,10 +23,10 @@ namespace Library.API.Controllers
             _libraryRepository = libraryRepository;
         }
 
-        [HttpGet()]
-        public IActionResult GetAuthors() //IActionResult defines a contract that represents the result of an action method
+        [HttpGet()]                    //[FromQuery] The values are coming from the query string in the URI sent
+        public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters) //IActionResult defines a contract that represents the result of an action method
         {
-            var authorsFromRepo = _libraryRepository.GetAuthors();
+            var authorsFromRepo = _libraryRepository.GetAuthors(authorsResourceParameters);
 
             var authors = Mapper.Map<IEnumerable < AuthorDto >> (authorsFromRepo);
 
@@ -51,7 +51,7 @@ namespace Library.API.Controllers
             //return new JsonResult(author); // JsonResult returns the given object as JSON
         }
 
-        [HttpPost]                                //[FromBody is used to serialize the data from the request into the specified type
+        [HttpPost]                     //[FromBody is used to serialize the data from the request into the specified type
         public IActionResult CreateAuthor([FromBody] AuthorForCreationDto author)
         {
             if (author == null)

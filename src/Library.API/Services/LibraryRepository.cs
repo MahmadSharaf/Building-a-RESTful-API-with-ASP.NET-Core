@@ -1,4 +1,5 @@
 ﻿using Library.API.Entities;
+using Library.API.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -64,9 +65,15 @@ namespace Library.API.Services
             return _context.Authors.FirstOrDefault(a => a.Id == authorId);
         }
 
-        public IEnumerable<Author> GetAuthors()
+        public IEnumerable<Author> GetAuthors(AuthorsResourceParameters authorsResourceParameters)
         {
-            return _context.Authors.OrderBy(a => a.FirstName).ThenBy(a => a.LastName);
+            return _context.Authors
+                .OrderBy(a => a.FirstName)
+                .ThenBy(a => a.LastName)
+                .Skip(authorsResourceParameters.pageSize // These will make sure that the list starting from
+                * (authorsResourceParameters.pageNumber - 1))   // the item in the requested page number
+                .Take(authorsResourceParameters.pageSize) // Returns the number of items according to the requested page size
+                .ToList();
         }
 
         public IEnumerable<Author> GetAuthors(IEnumerable<Guid> authorIds)
