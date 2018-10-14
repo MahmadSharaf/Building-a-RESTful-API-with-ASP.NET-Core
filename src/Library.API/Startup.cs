@@ -15,6 +15,9 @@ using Library.API.Helpers;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.Diagnostics;
 using NLog.Extensions.Logging;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 namespace Library.API
 {
@@ -43,9 +46,20 @@ namespace Library.API
             // it's better to store the connection string in an environment variable)
             var connectionString = Configuration["connectionStrings:libraryDBConnectionString"];
             services.AddDbContext<LibraryContext>(o => o.UseSqlServer(connectionString));
-
             // register the repository
             services.AddScoped<ILibraryRepository, LibraryRepository>();
+            // Used for paging
+            services.AddScoped<IUrlHelper, UrlHelper>  //UrlHelper converts urls into actions
+                 //Make sure URL Helper has access to it. Instead of just registering an instance of URL HElper,
+                 //so we will tell the container how to should constructed
+            (implementationFactory => //1- pass an action to be constructed
+            {   // 2 - Get the action context and that by calling GetService and passing in IActionContextAccessor,
+                var actionContext =         // that will give us an instance of action context accessors which has the action context as a property
+                implementationFactory.GetService<IActionContextAccessor>().ActionContext;
+                return new UrlHelper(actionContext); //3-return a new URL Helper, passing in that action context
+            });
+            services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();//In ASP.NET core actions are accessed through ActionContextAccessor //Singleton: the first time it's requested.
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -54,11 +68,11 @@ namespace Library.API
         {
             //There are a lot of log level: 
             //trace: is the most detailed log messages,
-            //debug: is used for messages that have short-term usefulness during development, it contain information about debugging, but it doesnot have any longterm value
+            //debug: is used for messages that have short-term usefulness during development, it contain information about debugging, but it doesn't have any longterm value
             //information: is used to track the general flow of an application. These logs do have some long term value. The warning level should be used for abnormal or unexpected events int the application flow. 
             //             So it may include errors or other conditions that do not cause the application to stop, but do need to be investigated further in the future.
-            //Error: should be logged when the current flow of the application must stop due to failure, such as an exception that should be handeled or recovered from.
-            //Critical: This should be reserved for unrecoverable apllication or system crashes, or catastrophic failure that requires immediate attention. 
+            //Error: should be logged when the current flow of the application must stop due to failure, such as an exception that should be handled or recovered from.
+            //Critical: This should be reserved for unrecoverable application or system crashes, or catastrophic failure that requires immediate attention. 
             loggerFactory.AddDebug(LogLevel.Information); //Keeping the default log level "information
             loggerFactory.AddNLog();
 
@@ -71,7 +85,7 @@ namespace Library.API
                 app.UseExceptionHandler(appBuilder =>   // This creates a global message for a specific status code
                 {
                     appBuilder.Run(async context => // This write the request response pipeline
-                    {   //from context.Features we can get collection of HTTP features provided by the server and middleware available on this request
+                    {   //from context.Features we can get collection of HTTP features provided by the server and middle-ware available on this request
                         var exceptionHandlerFeature = context.Features.Get<IExceptionHandlerFeature>();
                         if (exceptionHandlerFeature != null) //if the exception is found we can look at the error property to get the actual exception 
                         {//Now we go the exception, all we need to do now is to log it, and to log something, we need a logger instance. so we will inject it through the loggerFactory
@@ -82,7 +96,7 @@ namespace Library.API
                         }
                         // by sending below exception, we will lose it as it is not send to the consumer. So we should know about it
                         context.Response.StatusCode = 500; // Status code number
-                        await context.Response.WriteAsync("An unexpected fault happend. Try again later."); // The message for that status code
+                        await context.Response.WriteAsync("An unexpected fault happened. Try again later."); // The message for that status code
                         
                     });
                 });
@@ -99,7 +113,7 @@ namespace Library.API
                     .ForMember(dest => dest.Age, opt => opt.MapFrom(src =>
                      src.DateOfBirth.GetCurrentAge()));
                 cfg.CreateMap<Entities.Book, Model.BookDto>();
-                cfg.CreateMap< Model.AuthorForCreationDto, Entities.Author>(); //This mapping is used for input so the source is from the request to the repo
+                cfg.CreateMap< Model.AuthorForCreationDto, Entities.Author>(); //This mapping is used for input so the source is from the request to the repository
                 cfg.CreateMap<Model.BookForCreationDto, Entities.Book>();
                 cfg.CreateMap<Model.BookForUpdateDto, Entities.Book>();
                 cfg.CreateMap<Entities.Book, Model.BookForUpdateDto>();

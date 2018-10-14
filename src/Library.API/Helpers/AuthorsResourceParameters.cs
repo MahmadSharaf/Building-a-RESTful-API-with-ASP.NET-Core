@@ -11,8 +11,8 @@ namespace Library.API.Helpers
         const int maxPageSize = 20;
         private int _pageSize=10;
 
-        public int pageNumber { get; set; } = 1;
-        public int pageSize
+        public int PageNumber { get; set; } = 1;
+        public int PageSize
         {
             get
             {
