@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Library.API.Entities;
+using Library.API.Helpers;
 using Library.API.Model;
 using Library.API.Services;
 using Microsoft.AspNetCore.JsonPatch;
@@ -54,8 +55,23 @@ namespace Library.API.Controllers
         {
             if (book == null)
                 return BadRequest();
+
+            if (book.Description == book.Title)
+            {
+                ModelState.AddModelError(nameof(BookForCreationDTO),
+                    "The provided description should be different from the title.");
+            }
+
+            //Model State is a dictionary contains both of the model and model binding validation, 
+            //it also contains a collection of error messages for each value submitted
+            if(!ModelState.IsValid)
+            {//Validation
+                return new UnprocessableEntityObjectResult(ModelState);
+            }
+
             if (!_libraryRepository.AuthorExists(authorId))
                 return NotFound();
+
             var bookEntity = Mapper.Map<Book>(book);
 
             _libraryRepository.AddBookForAuthor(authorId, bookEntity);
