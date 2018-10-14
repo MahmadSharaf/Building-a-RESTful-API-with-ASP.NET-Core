@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Library.API.Model
 {
-    public class AuthorDTO
+    public class AuthorDto
     {
         public Guid Id { get; set; }
         public string Name { get; set; }

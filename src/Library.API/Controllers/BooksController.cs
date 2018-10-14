@@ -31,7 +31,7 @@ namespace Library.API.Controllers
             if (!_libraryRepository.AuthorExists(authorId))
                 return NotFound();
 
-            var books = Mapper.Map<IEnumerable<BookDTO>>(booksForAuthorFromRepo);
+            var books = Mapper.Map<IEnumerable<BookDto>>(booksForAuthorFromRepo);
             return Ok(books);
         }
 
@@ -45,20 +45,21 @@ namespace Library.API.Controllers
 
             if (bookForAuthorFromRepo == null)
                 return NotFound();
-            var book = Mapper.Map<BookDTO>(bookForAuthorFromRepo);
+            var book = Mapper.Map<BookDto>(bookForAuthorFromRepo);
 
             return Ok(book);
         }
 
         [HttpPost()]
-        public IActionResult CreateAuthorBook(Guid authorId, [FromBody] BookForCreationDTO book)
+        public IActionResult CreateAuthorBook(Guid authorId, [FromBody] BookForCreationDto book)
         {
             if (book == null)
                 return BadRequest();
 
+            //Cutom validation error
             if (book.Description == book.Title)
             {
-                ModelState.AddModelError(nameof(BookForCreationDTO),
+                ModelState.AddModelError(nameof(BookForCreationDto),
                     "The provided description should be different from the title.");
             }
 
@@ -78,7 +79,7 @@ namespace Library.API.Controllers
             if (!_libraryRepository.Save())
                 throw new Exception($"Creating a book for author {authorId} failed on save");
 
-            var bookToReturn = Mapper.Map<BookDTO>(bookEntity);
+            var bookToReturn = Mapper.Map<BookDto>(bookEntity);
 
             return CreatedAtRoute("GetBookForAuthor",
                 new { authorId = authorId, bookId = bookToReturn.Id },//the values required for the routing
@@ -104,7 +105,7 @@ namespace Library.API.Controllers
 
         [HttpPut("{bookId}")]
         public IActionResult UpdateBookForAuthor(Guid authorId, Guid bookId,
-            [FromBody] BookForUpdateDTO book)
+            [FromBody] BookForUpdateDto book)
         {
             if (book == null)
                 return BadRequest();
@@ -124,7 +125,7 @@ namespace Library.API.Controllers
                 if(!_libraryRepository.Save())
                     throw new Exception($"Upserting book {bookId}, for author {authorId} failed on saving");
 
-                var bookToReturn = Mapper.Map<BookDTO>(bookToAdd);
+                var bookToReturn = Mapper.Map<BookDto>(bookToAdd);
 
                 return CreatedAtRoute("GetBookForAuthor",
                     new { authorId = authorId, bookId, bookToReturn.Id }
@@ -144,7 +145,7 @@ namespace Library.API.Controllers
 
         [HttpPatch("{bookId}")]
         public IActionResult PartiallyUpdateBookForAuthor(Guid authorId, Guid bookId,
-            [FromBody] JsonPatchDocument<BookForUpdateDTO> patchDoc)//JsonPatchDocument is used because the content header is Json-patch
+            [FromBody] JsonPatchDocument<BookForUpdateDto> patchDoc)//JsonPatchDocument is used because the content header is Json-patch
         {
             if (patchDoc == null)
                 return BadRequest();
@@ -153,7 +154,7 @@ namespace Library.API.Controllers
 
             if (bookForAuthorFromRepo == null)
             {
-                var bookDto = new BookForUpdateDTO();
+                var bookDto = new BookForUpdateDto();
                 patchDoc.ApplyTo(bookDto); //To apply the changes to the bookDto
 
                 var bookToAdd = Mapper.Map<Book>(bookDto);
@@ -164,13 +165,13 @@ namespace Library.API.Controllers
                 if (!_libraryRepository.Save())
                     throw new Exception($"Upserting Book {bookId} for author {authorId} failed while saving");
 
-                var bookToReturn = Mapper.Map<BookDTO>(bookToAdd);
+                var bookToReturn = Mapper.Map<BookDto>(bookToAdd);
                 return CreatedAtRoute("GetBookForAuthor",
                     new { authorId = authorId, bookId, bookToReturn.Id },
                     bookToReturn);
             }
 
-            var bookToPatch = Mapper.Map<BookForUpdateDTO>(bookForAuthorFromRepo);
+            var bookToPatch = Mapper.Map<BookForUpdateDto>(bookForAuthorFromRepo);
 
             patchDoc.ApplyTo(bookToPatch);
 

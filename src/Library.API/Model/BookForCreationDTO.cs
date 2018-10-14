@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace Library.API.Model
 {
-    public class BookForCreationDTO
-    {
+    public class BookForCreationDto
+    {   //Validation annotations with error message
         [Required(ErrorMessage = "You should fill out a title.")]
         [MaxLength(100, ErrorMessage = "The title shouldn't have more than 100 characteres")]
         public string Title { get; set; }

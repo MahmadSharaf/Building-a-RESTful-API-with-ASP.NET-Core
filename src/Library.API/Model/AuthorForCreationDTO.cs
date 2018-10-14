@@ -5,14 +5,14 @@ using System.Threading.Tasks;
 
 namespace Library.API.Model
 {
-    public class AuthorForCreationDTO
+    public class AuthorForCreationDto
     {
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public DateTimeOffset DateOfBirth { get; set; }
         public string Genre { get; set; }
 
-        public ICollection<BookForCreationDTO> Books { get; set; }
-        = new List<BookForCreationDTO>();
+        public ICollection<BookForCreationDto> Books { get; set; }
+        = new List<BookForCreationDto>();
     }
 }

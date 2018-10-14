@@ -69,18 +69,18 @@ namespace Library.API
             // This is method is used to create mapping, it accepts an action on a mapping configuration as a parameter
             AutoMapper.Mapper.Initialize(cfg =>
             {   //           Source             Destination
-                cfg.CreateMap<Entities.Author, Model.AuthorDTO>()
+                cfg.CreateMap<Entities.Author, Model.AuthorDto>()
                     //Projections transform a source to a destination beyond flattening the object model.
                     // This specified using custom member mapping
                     .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
                      $"{src.FirstName} {src.LastName}"))
                     .ForMember(dest => dest.Age, opt => opt.MapFrom(src =>
                      src.DateOfBirth.GetCurrentAge()));
-                cfg.CreateMap<Entities.Book, Model.BookDTO>();
-                cfg.CreateMap< Model.AuthorForCreationDTO, Entities.Author>(); //This mapping is used for input so the source is from the request to the repo
-                cfg.CreateMap<Model.BookForCreationDTO, Entities.Book>();
-                cfg.CreateMap<Model.BookForUpdateDTO, Entities.Book>();
-                cfg.CreateMap<Entities.Book, Model.BookForUpdateDTO>();
+                cfg.CreateMap<Entities.Book, Model.BookDto>();
+                cfg.CreateMap< Model.AuthorForCreationDto, Entities.Author>(); //This mapping is used for input so the source is from the request to the repo
+                cfg.CreateMap<Model.BookForCreationDto, Entities.Book>();
+                cfg.CreateMap<Model.BookForUpdateDto, Entities.Book>();
+                cfg.CreateMap<Entities.Book, Model.BookForUpdateDto>();
 
             });
 

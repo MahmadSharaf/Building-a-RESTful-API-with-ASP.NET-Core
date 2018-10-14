@@ -28,7 +28,7 @@ namespace Library.API.Controllers
         {
             var authorsFromRepo = _libraryRepository.GetAuthors();
 
-            var authors = Mapper.Map<IEnumerable < AuthorDTO >> (authorsFromRepo);
+            var authors = Mapper.Map<IEnumerable < AuthorDto >> (authorsFromRepo);
 
             //Serialize the result as JSON
             return new JsonResult(authors); // JsonResult returns the given object as JSON
@@ -44,7 +44,7 @@ namespace Library.API.Controllers
                 return NotFound();
             }
 
-            var author = Mapper.Map<AuthorDTO>(authorFromRepo);
+            var author = Mapper.Map<AuthorDto>(authorFromRepo);
               
             return Ok(author);
             //Serialize the result as JSON
@@ -52,7 +52,7 @@ namespace Library.API.Controllers
         }
 
         [HttpPost]                                //[FromBody is used to serialize the data from the request into the specified type
-        public IActionResult CreateAuthor([FromBody] AuthorForCreationDTO author)
+        public IActionResult CreateAuthor([FromBody] AuthorForCreationDto author)
         {
             if (author == null)
             {
@@ -74,7 +74,7 @@ namespace Library.API.Controllers
             }
 
             // The Response will be the author just added but from the database itself after being added
-            var authorToReturn = Mapper.Map<AuthorDTO>(authorEntity);
+            var authorToReturn = Mapper.Map<AuthorDto>(authorEntity);
 
                                 // Call the above get method using its name
             return CreatedAtRoute("GetAuthor", new { id = authorToReturn.Id }/*?!new*/,
