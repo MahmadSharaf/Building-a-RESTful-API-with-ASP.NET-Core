@@ -110,11 +110,22 @@ namespace Library.API.Controllers
             if (book == null)
                 return BadRequest();
 
-            var bookFromRepo = _libraryRepository.GetBookForAuthor(authorId, bookId);
+            if (book.Description == book.Title)
+            {
+                ModelState.AddModelError(nameof(BookForUpdateDto),
+                    "The provided description should be different from the title.");
+            }
+
+            //Model State is a dictionary contains both of the model and model binding validation, 
+            //it also contains a collection of error messages for each value submitted
+            if (!ModelState.IsValid)
+            {//Validation
+                return new UnprocessableEntityObjectResult(ModelState);
+            }
 
             if (!_libraryRepository.AuthorExists(authorId))
                 return NotFound();
-
+            
             var bookForAuthorFromRepo = _libraryRepository.GetBookForAuthor(authorId, bookId);
             if (bookForAuthorFromRepo == null)//upserting
             {   //Create a variable that is mapped from type Book and the variable used is book because we want the data that in the request body
@@ -150,12 +161,28 @@ namespace Library.API.Controllers
             if (patchDoc == null)
                 return BadRequest();
 
+            if (!_libraryRepository.AuthorExists(authorId))
+                return NotFound();
+
             var bookForAuthorFromRepo = _libraryRepository.GetBookForAuthor(authorId, bookId);
 
             if (bookForAuthorFromRepo == null)
             {
                 var bookDto = new BookForUpdateDto();
-                patchDoc.ApplyTo(bookDto); //To apply the changes to the bookDto
+                patchDoc.ApplyTo(bookDto, ModelState); //To apply the changes to the bookDto
+
+                if (bookDto.Description == bookDto.Title)
+                {
+                    ModelState.AddModelError(nameof(BookForUpdateDto),
+                        "The provided description should be different from the title.");
+                }
+                                
+                TryValidateModel(bookDto);
+
+                if (!ModelState.IsValid)
+                {//Validation
+                    return new UnprocessableEntityObjectResult(ModelState);
+                }
 
                 var bookToAdd = Mapper.Map<Book>(bookDto);
                 bookToAdd.Id = bookId;
@@ -173,9 +200,22 @@ namespace Library.API.Controllers
 
             var bookToPatch = Mapper.Map<BookForUpdateDto>(bookForAuthorFromRepo);
 
-            patchDoc.ApplyTo(bookToPatch);
+            patchDoc.ApplyTo(bookToPatch, ModelState);
 
-            //addValidation
+            if (bookToPatch.Description == bookToPatch.Title)
+            {
+                ModelState.AddModelError(nameof(BookForUpdateDto),
+                    "The provided description should be different from the title.");
+            }
+
+            TryValidateModel(bookToPatch);
+
+            //Model State is a dictionary contains both of the model and model binding validation, 
+            //it also contains a collection of error messages for each value submitted
+            if (!ModelState.IsValid)
+            {//Validation
+                return new UnprocessableEntityObjectResult(ModelState);
+            }
 
             Mapper.Map(bookToPatch, bookForAuthorFromRepo);
 
