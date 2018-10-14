@@ -5,6 +5,7 @@ using Library.API.Model;
 using Library.API.Services;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,10 +17,13 @@ namespace Library.API.Controllers
     [Route("api/authors/{authorId}/books")]
     public class BooksController : Controller
     {
+        private ILogger<BooksController> _logger;
         private ILibraryRepository _libraryRepository;
 
-        public BooksController(ILibraryRepository libraryRepository)
-        {
+        public BooksController(ILibraryRepository libraryRepository,
+            ILogger<BooksController> logger)
+        {    //Loggers can also be injected in the constructor not only in the loggerFactory in startup.cs
+            _logger = logger;
             _libraryRepository = libraryRepository;
         }
 
@@ -100,6 +104,8 @@ namespace Library.API.Controllers
             if (!_libraryRepository.Save())
                 throw new Exception($"The Book with ID {bookId} for author {authorId} failed on saving");
 
+            _logger.LogInformation(100, $"Book {bookId} for author {authorId} was deleted");
+            
             return NoContent();
         }
 
@@ -169,6 +175,7 @@ namespace Library.API.Controllers
             if (bookForAuthorFromRepo == null)
             {
                 var bookDto = new BookForUpdateDto();
+
                 patchDoc.ApplyTo(bookDto, ModelState); //To apply the changes to the bookDto
 
                 if (bookDto.Description == bookDto.Title)
@@ -200,7 +207,8 @@ namespace Library.API.Controllers
 
             var bookToPatch = Mapper.Map<BookForUpdateDto>(bookForAuthorFromRepo);
 
-            patchDoc.ApplyTo(bookToPatch, ModelState);
+            //patchDoc.ApplyTo(bookToPatch, ModelState);
+            patchDoc.ApplyTo(bookToPatch);
 
             if (bookToPatch.Description == bookToPatch.Title)
             {
