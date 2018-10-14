@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Library.API.Helpers;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.Diagnostics;
+using NLog.Extensions.Logging;
 
 namespace Library.API
 {
@@ -59,6 +60,7 @@ namespace Library.API
             //Error: should be logged when the current flow of the application must stop due to failure, such as an exception that should be handeled or recovered from.
             //Critical: This should be reserved for unrecoverable apllication or system crashes, or catastrophic failure that requires immediate attention. 
             loggerFactory.AddDebug(LogLevel.Information); //Keeping the default log level "information
+            loggerFactory.AddNLog();
 
             if (env.IsDevelopment())
             {
