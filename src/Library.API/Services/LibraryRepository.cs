@@ -1,5 +1,6 @@
 ﻿using Library.API.Entities;
 using Library.API.Helpers;
+using Library.API.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,10 +10,13 @@ namespace Library.API.Services
     public class LibraryRepository : ILibraryRepository
     {
         private LibraryContext _context;
+        private IPropertyMappingService _propertyMappingService;
 
-        public LibraryRepository(LibraryContext context)
+        public LibraryRepository(LibraryContext context,
+            IPropertyMappingService propertyMappingService)
         {
             _context = context;
+            _propertyMappingService = propertyMappingService;
         }
 
         public void AddAuthor(Author author)
@@ -35,7 +39,7 @@ namespace Library.API.Services
             var author = GetAuthor(authorId);
             if (author != null)
             {
-                // if there isn't an id filled out (ie: we're not upserting),
+                // if there isn't an id filled out (i.e: we're not upserting),
                 // we should generate one
                 if (book.Id == Guid.Empty)
                 {
@@ -70,6 +74,13 @@ namespace Library.API.Services
             var collectionBeforePaging = _context.Authors
                 .OrderBy(a => a.FirstName)
                 .ThenBy(a => a.LastName).AsQueryable();
+            
+            // Sorting 
+            // implementing the method here won't lead to re-usability.
+            //var collectionBeforePaging =
+            //    _context.Authors.ApplySort(authorsResourceParameters.OrderBy,
+            //    _propertyMappingService.GetPropertyMapping<AuthorDto, Author>());
+
             // Filtering
             if (!string.IsNullOrEmpty(authorsResourceParameters.Genre))
             {
@@ -79,8 +90,9 @@ namespace Library.API.Services
                 collectionBeforePaging = collectionBeforePaging
                     .Where(a => a.Genre.ToLowerInvariant() == genreForWhereClause);
             }
+
             // Searching
-            if(!string.IsNullOrEmpty(authorsResourceParameters.SearchQuery))
+            if (!string.IsNullOrEmpty(authorsResourceParameters.SearchQuery))
             {
                 //trim and ignore casing
                 var searchQueryForWhereClause = authorsResourceParameters.SearchQuery
@@ -94,14 +106,14 @@ namespace Library.API.Services
             return PagedList<Author>.Create(collectionBeforePaging,
                 authorsResourceParameters.PageNumber,
                 authorsResourceParameters.PageSize);
-                
-                /*_context.Authors
-                .OrderBy(a => a.FirstName)
-                .ThenBy(a => a.LastName)
-                .Skip(authorsResourceParameters.pageSize // These will make sure that the list starting from
-                * (authorsResourceParameters.pageNumber - 1))   // the item in the requested page number
-                .Take(authorsResourceParameters.pageSize) // Returns the number of items according to the requested page size
-                .ToList();*/
+
+            /*_context.Authors
+            .OrderBy(a => a.FirstName)
+            .ThenBy(a => a.LastName)
+            .Skip(authorsResourceParameters.pageSize // These will make sure that the list starting from
+            * (authorsResourceParameters.pageNumber - 1))   // the item in the requested page number
+            .Take(authorsResourceParameters.pageSize) // Returns the number of items according to the requested page size
+            .ToList();*/
         }
 
         public IEnumerable<Author> GetAuthors(IEnumerable<Guid> authorIds)

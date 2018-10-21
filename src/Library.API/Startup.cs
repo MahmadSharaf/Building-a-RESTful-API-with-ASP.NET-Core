@@ -59,7 +59,7 @@ namespace Library.API
                 return new UrlHelper(actionContext); //3-return a new URL Helper, passing in that action context
             });
             services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();//In ASP.NET core actions are accessed through ActionContextAccessor //Singleton: the first time it's requested.
-
+            services.AddTransient<IPropertyMappingService, PropertyMappingService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
