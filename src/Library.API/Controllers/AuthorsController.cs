@@ -11,58 +11,70 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-// Auto-mapper has to be used to map between DTOs and Entities because implement validation attributes or data annotations used to validate input on a class that returns data does not make sense
+// Auto-mapper has to be used to map between DTOs and Entities
 
 namespace Library.API.Controllers
 {   [Route("api/authors")]
     public class AuthorsController : Controller
     {
-        private ILibraryRepository _libraryRepository;
-        private IUrlHelper _urlHelper;
+        private ILibraryRepository      _libraryRepository      ; 
+        private IUrlHelper              _urlHelper              ; 
+        private IPropertyMappingService _propertyMappingService ; 
 
-        public AuthorsController(ILibraryRepository libraryRepository, IUrlHelper urlHelper)
+        public AuthorsController(ILibraryRepository libraryRepository
+                               , IUrlHelper urlHelper
+                               , IPropertyMappingService propertyMappingService)
         {
-            //Injects an instance of the repository
-            _libraryRepository = libraryRepository;
-            //Injects an instance of UrlHelper
-            _urlHelper = urlHelper;
+            
+            _libraryRepository      = libraryRepository;        //Injects an instance of the repository
+            _urlHelper              = urlHelper;                //Injects an instance of UrlHelper
+            _propertyMappingService = propertyMappingService;   
         }   
-
-        [HttpGet(Name = "GetAuthors")]                    //[FromQuery] The values are coming from the query string in the URI sent
+        //todo ******************** GET Authors ***********************************
+        [HttpGet(Name = "GetAuthors")]       //[FromQuery] The values are coming from the query string in the URI sent
         public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters) //IActionResult defines a contract that represents the result of an action method
-        {   // authorsFromRepo is now a page list of author   
+        {
+            // Check for invalid orderby and return the correct status code 400
+            if (!_propertyMappingService.ValidMappingExistsFor<AuthorDto, Author> (authorsResourceParameters.OrderBy))
+            {
+                return BadRequest();
+            }
+            
+            // authorsFromRepo is now a page list of author   
             var authorsFromRepo = _libraryRepository.GetAuthors(authorsResourceParameters);
 
             // Here we can check if we there is a previous page available
             var previousPageLink = authorsFromRepo.HasPrevious ?
-                CreateAuthorsResourceUri(authorsResourceParameters,
-                ResourceUriType.PreviousPage) : null;
+                    CreateAuthorsResourceUri(authorsResourceParameters, ResourceUriType.PreviousPage) : null;
+
             // Here we can check if we there is a next page available
             var nextPageLink = authorsFromRepo.HasNext ?
-                CreateAuthorsResourceUri(authorsResourceParameters,
-                ResourceUriType.NextPage) : null;
-            // Create a metadata
+                    CreateAuthorsResourceUri(authorsResourceParameters, ResourceUriType.NextPage) : null;
+
+            // Create metadata for X-pagination
             var paginationMetadata = new
             {
-                totalCount = authorsFromRepo.TotalCount,
-                pageSize = authorsFromRepo.PageSize,
-                currentPage = authorsFromRepo.CurrentPage,
-                totalPages = authorsFromRepo.TotalPages,
-                previousPageLink = previousPageLink,
-                nextPageLink = nextPageLink
+                totalCount       = authorsFromRepo  . TotalCount ,  
+                pageSize         = authorsFromRepo  . PageSize ,    
+                currentPage      = authorsFromRepo  . CurrentPage , 
+                totalPages       = authorsFromRepo  . TotalPages ,  
+                previousPageLink = previousPageLink ,               
+                nextPageLink     = nextPageLink                                          
             };
             //Create a custom header
             Response.Headers.Add("X-Pagination",
                 Newtonsoft.Json.JsonConvert.SerializeObject(paginationMetadata));
 
+            // Map from Author Entity to Author Dto
             var authors = Mapper.Map<IEnumerable < AuthorDto >> (authorsFromRepo);
 
             //Serialize the result as JSON
             return Ok(authors);
             //return new JsonResult(authors); // JsonResult returns the given object as JSON
         }
-
-        // Create Links
+        //todo /////////////////////////////////////////////////////////////////////
+        
+        //todo ********************* Create Links **********************************
         private string CreateAuthorsResourceUri(
             AuthorsResourceParameters authorsResourceParameters, //accepts the old resource parameter, as it is needed to generate URIs
             ResourceUriType type) //It also accept enumeration, so we can pass in whatever we want to generate a previous or next page link 
@@ -73,32 +85,37 @@ namespace Library.API.Controllers
                     return _urlHelper.Link("GetAuthors",
                         new
                         {
-                            searchQuery = authorsResourceParameters.SearchQuery,
-                            genre = authorsResourceParameters.Genre,
-                            pageNumber = authorsResourceParameters.PageNumber - 1,
-                            pageSize = authorsResourceParameters.PageSize
+                            orderBy     = authorsResourceParameters . OrderBy     ,     
+                            searchQuery = authorsResourceParameters . SearchQuery ,     
+                            genre       = authorsResourceParameters . Genre       ,     
+                            pageNumber  = authorsResourceParameters . PageNumber  - 1 , 
+                            pageSize    = authorsResourceParameters . PageSize                 
                         });
                 case ResourceUriType.NextPage:
                     return _urlHelper.Link("GetAuthors",
                         new
                         {
-                            searchQuery = authorsResourceParameters.SearchQuery,
-                            genre = authorsResourceParameters.Genre,
-                            pageNumber = authorsResourceParameters.PageNumber + 1,
-                            pageSize = authorsResourceParameters.PageSize
+                            orderBy     = authorsResourceParameters . OrderBy     ,     
+                            searchQuery = authorsResourceParameters . SearchQuery ,     
+                            genre       = authorsResourceParameters . Genre       ,     
+                            pageNumber  = authorsResourceParameters . PageNumber  + 1 , 
+                            pageSize    = authorsResourceParameters . PageSize                    
                         });
                 default:
                     return _urlHelper.Link("GerAuthors",
                         new
                         {
-                            searchQuery = authorsResourceParameters.SearchQuery,
-                            genre = authorsResourceParameters.Genre,
-                            pageNumber = authorsResourceParameters.PageNumber,
-                            pageSize = authorsResourceParameters.PageSize
+                            orderBy     = authorsResourceParameters . OrderBy     , 
+                            searchQuery = authorsResourceParameters . SearchQuery , 
+                            genre       = authorsResourceParameters . Genre       , 
+                            pageNumber  = authorsResourceParameters . PageNumber  , 
+                            pageSize    = authorsResourceParameters . PageSize            
                         });
             }
         }
+        //todo //////////////////////////////////////////////////////////////////////
 
+        //todo ******************** GET One Author **********************************
         [HttpGet("{id}", Name ="GetAuthor")]
         public IActionResult GetAuthor(Guid id) //IActionResult defines a contract that represents the result of an action method
         {
@@ -111,11 +128,13 @@ namespace Library.API.Controllers
 
             var author = Mapper.Map<AuthorDto>(authorFromRepo);
               
-            return Ok(author);
-            //Serialize the result as JSON
+            return Ok(author); //Serialize the result as JSON
+
             //return new JsonResult(author); // JsonResult returns the given object as JSON
         }
+        //todo //////////////////////////////////////////////////////////////////////
 
+        //todo ******************** POST Create One Author **************************
         [HttpPost]                     //[FromBody is used to serialize the data from the request into the specified type
         public IActionResult CreateAuthor([FromBody] AuthorForCreationDto author)
         {
@@ -145,7 +164,9 @@ namespace Library.API.Controllers
             return CreatedAtRoute("GetAuthor", new { id = authorToReturn.Id }/*?!new*/,
                 authorToReturn);
         }
+        //todo //////////////////////////////////////////////////////////////////////
 
+        //todo ******************* Block Creating existing Author *******************
         [HttpPost("{id}")]
         public IActionResult BlockAuthorCreation(Guid id)
         {
@@ -154,7 +175,9 @@ namespace Library.API.Controllers
 
             return NotFound();
         }
+        //todo //////////////////////////////////////////////////////////////////////
 
+        //todo ******************* DELETE One Author ********************************
         [HttpDelete("{authorid}")]
         public IActionResult DeleteAuthor(Guid authorId)
         {
@@ -171,5 +194,6 @@ namespace Library.API.Controllers
 
             return NoContent();
         }
+        //todo /////////////////////////////////////////////////////////////////////
     }
 }

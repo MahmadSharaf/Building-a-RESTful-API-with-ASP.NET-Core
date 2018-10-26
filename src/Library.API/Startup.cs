@@ -30,6 +30,10 @@ namespace Library.API
             Configuration = configuration;
         }
 
+        //todo ***************************************************************
+        //todo ***************** Configure Service  **************************
+        //todo ***************************************************************
+
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit http://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
@@ -41,26 +45,45 @@ namespace Library.API
                 setupAction.InputFormatters.Add(new XmlDataContractSerializerInputFormatter());
             });
 
+            //todo ***************** DB Context  **************************
             // register the DbContext on the container, getting the connection string from
             // appSettings (note: use this during development; in a production environment,
             // it's better to store the connection string in an environment variable)
             var connectionString = Configuration["connectionStrings:libraryDBConnectionString"];
             services.AddDbContext<LibraryContext>(o => o.UseSqlServer(connectionString));
+            //todo ///////////////////////////////////////////////////////////
+
+            //todo ***************** repository  **************************
             // register the repository
             services.AddScoped<ILibraryRepository, LibraryRepository>();
-            // Used for paging
-            services.AddScoped<IUrlHelper, UrlHelper>  //UrlHelper converts urls into actions
-                 //Make sure URL Helper has access to it. Instead of just registering an instance of URL HElper,
-                 //so we will tell the container how to should constructed
-            (implementationFactory => //1- pass an action to be constructed
-            {   // 2 - Get the action context and that by calling GetService and passing in IActionContextAccessor,
-                var actionContext =         // that will give us an instance of action context accessors which has the action context as a property
-                implementationFactory.GetService<IActionContextAccessor>().ActionContext;
-                return new UrlHelper(actionContext); //3-return a new URL Helper, passing in that action context
+            //todo ///////////////////////////////////////////////////////////
+
+            //todo ***************** URL Metadata  **//! Used for paging******
+            //URL Helper will generate  URIs to an action, and to be able to do that, it requires the context in which the action runs.
+            //In ASP.NET core actions are accessed through ActionContextAccessor 
+            services.AddSingleton<IActionContextAccessor, ActionContextAccessor>(); //! Singleton: the first time it's requested.
+            
+            //UrlHelper converts urls into actions 
+            services.AddScoped<IUrlHelper, UrlHelper>   //! scoped, so an instance is created once per request
+            (implementationFactory =>                   //To make sure URL Helper has access to IActionContextAccessor. Instead of just registering an instance of URL Helper,
+            {                                           //so we will tell the container how it should be constructed
+                var actionContext =
+                implementationFactory                   // 1- pass an action to be constructed "implementationFactory"
+                  .GetService<IActionContextAccessor>() // 2 - Get the action context, and that by calling "GetService" and passing in "IActionContextAccessor",
+                  .ActionContext;                       //  that will give us an instance of action context accessors which has the action context as a property
+                return new UrlHelper(actionContext);    // 3-return a new URL Helper, passing in that action context
             });
-            services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();//In ASP.NET core actions are accessed through ActionContextAccessor //Singleton: the first time it's requested.
-            services.AddTransient<IPropertyMappingService, PropertyMappingService>();
+            //todo ///////////////////////////////////////////////////////////
+
+            //todo ***************** Sorting mapping  **************************
+            services.AddTransient<IPropertyMappingService, PropertyMappingService>(); //AddTransient is lifetime     advised by ASP.NET core team for lightweight stateless services.
+            //todo ///////////////////////////////////////////////////////////
         }
+
+
+        //todo ***************************************************************
+        //todo **********************   Configure   **************************
+        //todo ***************************************************************
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, 
@@ -73,9 +96,13 @@ namespace Library.API
             //             So it may include errors or other conditions that do not cause the application to stop, but do need to be investigated further in the future.
             //Error: should be logged when the current flow of the application must stop due to failure, such as an exception that should be handled or recovered from.
             //Critical: This should be reserved for unrecoverable application or system crashes, or catastrophic failure that requires immediate attention. 
+
+            //todo *********************** Logger **************************
             loggerFactory.AddDebug(LogLevel.Information); //Keeping the default log level "information
             loggerFactory.AddNLog();
+            //todo ///////////////////////////////////////////////////////////
 
+            //todo ****************** Exception Handler *********************
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -101,7 +128,9 @@ namespace Library.API
                     });
                 });
             }
+            //todo ///////////////////////////////////////////////////////////
 
+            //todo ****************** Auto Mapper *********************
             // This is method is used to create mapping, it accepts an action on a mapping configuration as a parameter
             AutoMapper.Mapper.Initialize(cfg =>
             {   //           Source             Destination
@@ -119,6 +148,7 @@ namespace Library.API
                 cfg.CreateMap<Entities.Book, Model.BookForUpdateDto>();
 
             });
+            //todo ///////////////////////////////////////////////////////////
 
             libraryContext.EnsureSeedDataForContext();
 

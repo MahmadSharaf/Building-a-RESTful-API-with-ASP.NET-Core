@@ -28,9 +28,9 @@ namespace Library.API.Helpers
 
         public PagedList(List<T> items, int count, int pageNumber, int pageSize)
         {//The constructor won't be called directly a static method will be used instead
-            TotalCount = count;
-            PageSize = pageSize;
-            CurrentPage = pageNumber;
+            TotalCount  = count      ; 
+            PageSize    = pageSize   ; 
+            CurrentPage = pageNumber ; 
             TotalPages = (int)Math.Ceiling(count / (double)pageSize);
             AddRange(items); // AddRange is a method on list of T, Which adds items to the underlying list.
         }
@@ -43,5 +43,7 @@ namespace Library.API.Helpers
             var items = source.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
             return new PagedList<T>(items, count, pageNumber, pageSize);
         }
+
+
     }
 }

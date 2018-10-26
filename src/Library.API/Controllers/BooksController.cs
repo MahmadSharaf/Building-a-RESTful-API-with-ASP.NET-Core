@@ -27,6 +27,7 @@ namespace Library.API.Controllers
             _libraryRepository = libraryRepository;
         }
 
+        //todo *************** Get Books For Author ***************************
         [HttpGet()]
         public IActionResult GetBooksForAuthor(Guid authorId)
         {
@@ -38,7 +39,9 @@ namespace Library.API.Controllers
             var books = Mapper.Map<IEnumerable<BookDto>>(booksForAuthorFromRepo);
             return Ok(books);
         }
+        //todo ////////////////////////////////////////////////////////////////
 
+        //todo *************** Get one Book For Author ***************************
         [HttpGet("{bookId}", Name = "GetBookForAuthor")]
         public IActionResult GetBookForAuthor(Guid authorId, Guid bookId)
         {
@@ -53,7 +56,9 @@ namespace Library.API.Controllers
 
             return Ok(book);
         }
+        //todo ////////////////////////////////////////////////////////////////
 
+        //todo *************** POST Create Author Book ***************************
         [HttpPost()]
         public IActionResult CreateAuthorBook(Guid authorId, [FromBody] BookForCreationDto book)
         {
@@ -89,7 +94,9 @@ namespace Library.API.Controllers
                 new { authorId = authorId, bookId = bookToReturn.Id },//the values required for the routing
                 bookToReturn);//the content that will be returned by the response body
         }
+        //todo ////////////////////////////////////////////////////////////////
 
+        //todo *************** Delete one book for author ***************************
         [HttpDelete("{bookId}")]
         public IActionResult DeleteBookForAuthor(Guid authorId, Guid bookId)
         {
@@ -108,7 +115,9 @@ namespace Library.API.Controllers
             
             return NoContent();
         }
+        //todo ////////////////////////////////////////////////////////////////
 
+        //todo *************** PUT Update Book For Author ***************************
         [HttpPut("{bookId}")]
         public IActionResult UpdateBookForAuthor(Guid authorId, Guid bookId,
             [FromBody] BookForUpdateDto book)
@@ -159,7 +168,9 @@ namespace Library.API.Controllers
             return NoContent();
          
         }
+        //todo ////////////////////////////////////////////////////////////////
 
+        //todo *************** PATCH Partially Update Book For Author ***************************
         [HttpPatch("{bookId}")]
         public IActionResult PartiallyUpdateBookForAuthor(Guid authorId, Guid bookId,
             [FromBody] JsonPatchDocument<BookForUpdateDto> patchDoc)//JsonPatchDocument is used because the content header is Json-patch
@@ -234,5 +245,7 @@ namespace Library.API.Controllers
 
             return NoContent();
         }
+        //todo ////////////////////////////////////////////////////////////////
+
     }
 }

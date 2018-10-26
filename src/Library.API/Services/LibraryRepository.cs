@@ -71,15 +71,15 @@ namespace Library.API.Services
 
         public PagedList<Author> GetAuthors(AuthorsResourceParameters authorsResourceParameters)
         {
-            var collectionBeforePaging = _context.Authors
-                .OrderBy(a => a.FirstName)
-                .ThenBy(a => a.LastName).AsQueryable();
+            //var collectionBeforePaging = _context.Authors
+            //    .OrderBy(a => a.FirstName)
+            //    .ThenBy (a => a.LastName ).AsQueryable();
             
             // Sorting 
             // implementing the method here won't lead to re-usability.
-            //var collectionBeforePaging =
-            //    _context.Authors.ApplySort(authorsResourceParameters.OrderBy,
-            //    _propertyMappingService.GetPropertyMapping<AuthorDto, Author>());
+            var collectionBeforePaging =
+                _context.Authors.ApplySort(authorsResourceParameters.OrderBy,
+                _propertyMappingService.GetPropertyMapping<AuthorDto, Author>());
 
             // Filtering
             if (!string.IsNullOrEmpty(authorsResourceParameters.Genre))

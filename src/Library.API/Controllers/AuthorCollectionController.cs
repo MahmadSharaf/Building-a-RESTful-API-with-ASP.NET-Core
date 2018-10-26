@@ -20,7 +20,7 @@ namespace Library.API.Controllers
         {
             _libraryRepository = libraryRepository;
         }
-
+        //todo *********** POST Create Author Collection **********************
         [HttpPost()]
         public IActionResult CreateAuthorCollection(
             [FromBody] IEnumerable<AuthorForCreationDto> authorCollection)
@@ -44,7 +44,9 @@ namespace Library.API.Controllers
             return CreatedAtRoute("GetAuthorCollection",new
             { ids = idsAsString }, authorCollectionToReturn);
         }
+        //todo //////////////////////////////////////////////////////////////////
 
+        //todo ******************** GET Author Collection ***************************
         [HttpGet("({ids})", Name = "GetAuthorCollection")]
         public IActionResult GetAuthorCollection(
             [ModelBinder(BinderType = typeof(ArrayModelBinder))] IEnumerable<Guid> ids)
@@ -60,5 +62,6 @@ namespace Library.API.Controllers
             var authorsToReturn = Mapper.Map<IEnumerable<AuthorDto>>(authorEntities);
             return Ok(authorsToReturn);
         }
+        //todo ///////////////////////////////////////////////////////////////////
     }
 }
