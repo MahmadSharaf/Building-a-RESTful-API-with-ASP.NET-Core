@@ -18,6 +18,7 @@ using NLog.Extensions.Logging;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Newtonsoft.Json.Serialization;
 
 namespace Library.API
 {
@@ -43,7 +44,13 @@ namespace Library.API
                 setupAction.ReturnHttpNotAcceptable = true; // No default output format if the requested format send is not supported a 406 error is returned
                 setupAction.OutputFormatters.Add(new XmlDataContractSerializerOutputFormatter());
                 setupAction.InputFormatters.Add(new XmlDataContractSerializerInputFormatter());
-            });
+            })
+            .AddJsonOptions(options =>      // This is for resolving the casing in the request fields name, as instead of returning the fields with its original casing
+               {                            // the fields are returned with upper-cased first letters
+                   options.SerializerSettings.ContractResolver =
+                       new CamelCasePropertyNamesContractResolver();
+
+               });
 
             //todo ***************** DB Context  **************************
             // register the DbContext on the container, getting the connection string from
@@ -77,6 +84,10 @@ namespace Library.API
 
             //todo ***************** Sorting mapping  **************************
             services.AddTransient<IPropertyMappingService, PropertyMappingService>(); //AddTransient is lifetime     advised by ASP.NET core team for lightweight stateless services.
+            //todo ///////////////////////////////////////////////////////////
+            
+            //todo ***************** Shaping mapping  **************************
+            services.AddTransient<ITypeHelperService, TypeHelperService>(); //AddTransient is lifetime     advised by ASP.NET core team for lightweight stateless services.
             //todo ///////////////////////////////////////////////////////////
         }
 

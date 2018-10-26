@@ -20,22 +20,31 @@ namespace Library.API.Controllers
         private ILibraryRepository      _libraryRepository      ; 
         private IUrlHelper              _urlHelper              ; 
         private IPropertyMappingService _propertyMappingService ; 
+        private ITypeHelperService      _typeHelperService      ; 
 
-        public AuthorsController(ILibraryRepository libraryRepository
-                               , IUrlHelper urlHelper
-                               , IPropertyMappingService propertyMappingService)
+        public AuthorsController(ILibraryRepository      libraryRepository
+                               , IUrlHelper              urlHelper              
+                               , IPropertyMappingService propertyMappingService 
+                               , ITypeHelperService      typeHelperService      )
         {
             
             _libraryRepository      = libraryRepository;        //Injects an instance of the repository
             _urlHelper              = urlHelper;                //Injects an instance of UrlHelper
-            _propertyMappingService = propertyMappingService;   
+            _propertyMappingService = propertyMappingService;
+            _typeHelperService      = typeHelperService;
         }   
         //todo ******************** GET Authors ***********************************
-        [HttpGet(Name = "GetAuthors")]       //[FromQuery] The values are coming from the query string in the URI sent
-        public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters) //IActionResult defines a contract that represents the result of an action method
-        {
+        [HttpGet(Name = "GetAuthors")]       
+        public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters)
+        {//IActionResult defines a contract that represents the result of an action method
+
             // Check for invalid orderby and return the correct status code 400
             if (!_propertyMappingService.ValidMappingExistsFor<AuthorDto, Author> (authorsResourceParameters.OrderBy))
+            {
+                return BadRequest();
+            }
+
+            if (!_typeHelperService.TypeHasProperties<AuthorDto>(authorsResourceParameters.Fields))
             {
                 return BadRequest();
             }
@@ -69,7 +78,7 @@ namespace Library.API.Controllers
             var authors = Mapper.Map<IEnumerable < AuthorDto >> (authorsFromRepo);
 
             //Serialize the result as JSON
-            return Ok(authors);
+            return Ok(authors.ShapeData(authorsResourceParameters.Fields));
             //return new JsonResult(authors); // JsonResult returns the given object as JSON
         }
         //todo /////////////////////////////////////////////////////////////////////
@@ -85,6 +94,7 @@ namespace Library.API.Controllers
                     return _urlHelper.Link("GetAuthors",
                         new
                         {
+                            fields      = authorsResourceParameters . Fields      ,
                             orderBy     = authorsResourceParameters . OrderBy     ,     
                             searchQuery = authorsResourceParameters . SearchQuery ,     
                             genre       = authorsResourceParameters . Genre       ,     
@@ -95,6 +105,7 @@ namespace Library.API.Controllers
                     return _urlHelper.Link("GetAuthors",
                         new
                         {
+                            fields      = authorsResourceParameters . Fields      ,
                             orderBy     = authorsResourceParameters . OrderBy     ,     
                             searchQuery = authorsResourceParameters . SearchQuery ,     
                             genre       = authorsResourceParameters . Genre       ,     
@@ -105,6 +116,7 @@ namespace Library.API.Controllers
                     return _urlHelper.Link("GerAuthors",
                         new
                         {
+                            fields      = authorsResourceParameters . Fields      ,
                             orderBy     = authorsResourceParameters . OrderBy     , 
                             searchQuery = authorsResourceParameters . SearchQuery , 
                             genre       = authorsResourceParameters . Genre       , 
@@ -116,9 +128,14 @@ namespace Library.API.Controllers
         //todo //////////////////////////////////////////////////////////////////////
 
         //todo ******************** GET One Author **********************************
-        [HttpGet("{id}", Name ="GetAuthor")]
-        public IActionResult GetAuthor(Guid id) //IActionResult defines a contract that represents the result of an action method
+        [HttpGet("{id}", Name ="GetAuthor")]    //[FromQuery] The values are coming from the query string in the URI sent
+        public IActionResult GetAuthor(Guid id, [FromQuery] string fields) //IActionResult defines a contract that represents the result of an action method
         {
+            if (!_typeHelperService.TypeHasProperties<AuthorDto>(fields))
+            {
+                return BadRequest();
+            }
+
             var authorFromRepo = _libraryRepository.GetAuthor(id);
 
             if (authorFromRepo == null)
@@ -128,7 +145,7 @@ namespace Library.API.Controllers
 
             var author = Mapper.Map<AuthorDto>(authorFromRepo);
               
-            return Ok(author); //Serialize the result as JSON
+            return Ok(author.ShapeData(fields)); //Serialize the result as JSON
 
             //return new JsonResult(author); // JsonResult returns the given object as JSON
         }
