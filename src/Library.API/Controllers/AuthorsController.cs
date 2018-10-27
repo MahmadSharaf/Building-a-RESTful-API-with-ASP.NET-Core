@@ -35,7 +35,8 @@ namespace Library.API.Controllers
         }   
         //todo ******************** GET Authors ***********************************
         [HttpGet(Name = "GetAuthors")]       
-        public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters)
+        public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters,
+                                        [FromHeader(Name ="Accept")] string mediaType)
         {//IActionResult defines a contract that represents the result of an action method
 
             // Check for invalid orderby and return the correct status code 400
@@ -52,58 +53,80 @@ namespace Library.API.Controllers
             // authorsFromRepo is now a page list of author   
             var authorsFromRepo = _libraryRepository.GetAuthors(authorsResourceParameters);
 
-            // Here we can check if we there is a previous page available
-            //x var previousPageLink = authorsFromRepo.HasPrevious ?
-            //x         CreateAuthorsResourceUri(authorsResourceParameters, ResourceUriType.PreviousPage) : null;
-
-            // Here we can check if we there is a next page available
-            //x var nextPageLink = authorsFromRepo.HasNext ?
-            //x         CreateAuthorsResourceUri(authorsResourceParameters, ResourceUriType.NextPage) : null;
-
-            // Create metadata for X-pagination
-            var paginationMetadata = new
-            {
-                totalCount       = authorsFromRepo  . TotalCount ,  
-                pageSize         = authorsFromRepo  . PageSize ,    
-                currentPage      = authorsFromRepo  . CurrentPage , 
-                totalPages       = authorsFromRepo  . TotalPages ,  
-                //x previousPageLink = previousPageLink ,               
-                //x nextPageLink     = nextPageLink                                          
-            };
-            //Create a custom header
-            Response.Headers.Add("X-Pagination",
-                Newtonsoft.Json.JsonConvert.SerializeObject(paginationMetadata));
-
             // Map from Author Entity to Author Dto
             var authors = Mapper.Map<IEnumerable < AuthorDto >> (authorsFromRepo);
 
-            //Links for author resource
-            var links = CreateLinksForAuthors(authorsResourceParameters,
+
+            //! HATEOAS is returned only if it requested explicity in the request Header
+            if (mediaType == "application/vnd.marvin.hateoas+json")
+            {
+
+                // Create metadata for X-pagination
+                var paginationMetadata = new
+                {
+                    totalCount = authorsFromRepo.TotalCount,
+                    pageSize = authorsFromRepo.PageSize,
+                    currentPage = authorsFromRepo.CurrentPage,
+                    totalPages = authorsFromRepo.TotalPages,
+                    //x previousPageLink = previousPageLink ,               
+                    //x nextPageLink     = nextPageLink                                          
+                };
+
+                //Links for author resource
+                var links = CreateLinksForAuthors(authorsResourceParameters,
                 authorsFromRepo.HasNext, authorsFromRepo.HasPrevious);
 
-            //shaped authors themselves
-            var shapedAuthors = authors.ShapeData(authorsResourceParameters.Fields);
+                //shaped authors themselves
+                var shapedAuthors = authors.ShapeData(authorsResourceParameters.Fields);
 
-            //links for each of those shaped authors
-            var shapedAuthorsWithLinks = shapedAuthors.Select(author =>
+                //links for each of those shaped authors
+                var shapedAuthorsWithLinks = shapedAuthors.Select(author =>
+                {
+                    var authorAsDictionary = author as IDictionary<string, object>;
+                    var authorLinks = CreateLinksForAuthor(
+                        (Guid)authorAsDictionary["Id"], authorsResourceParameters.Fields);
+
+                    authorAsDictionary.Add("links", authorLinks);
+
+                    return authorAsDictionary;
+                });
+
+                var linkedCollectionResource = new
+                {
+                    value = shapedAuthorsWithLinks,
+                    linkd = links
+                };
+                //Serialize the result as JSON
+                return Ok(linkedCollectionResource);
+                //return new JsonResult(authors); // JsonResult returns the given object as JSON
+            }
+            //! If HATEOS links is not requested then the data will be returned without HATEOAS links
+            else
             {
-                var authorAsDictionary = author as IDictionary<string, object>;
-                var authorLinks = CreateLinksForAuthor(
-                    (Guid)authorAsDictionary["Id"], authorsResourceParameters.Fields);
+                // Here we can check if we there is a previous page available
+                var previousPageLink = authorsFromRepo.HasPrevious ?
+                        CreateAuthorsResourceUri(authorsResourceParameters, ResourceUriType.PreviousPage) : null;
 
-                authorAsDictionary.Add("links", authorLinks);
+                // Here we can check if we there is a next page available
+                var nextPageLink = authorsFromRepo.HasNext ?
+                        CreateAuthorsResourceUri(authorsResourceParameters, ResourceUriType.NextPage) : null;
 
-                return authorAsDictionary;
-            });
+                var paginationMetadata = new
+                {
+                    totalCount = authorsFromRepo.TotalCount,
+                    pageSize = authorsFromRepo.PageSize,
+                    currentPage = authorsFromRepo.CurrentPage,
+                    totalPages = authorsFromRepo.TotalPages,
+                    previousPageLink = previousPageLink ,               
+                    nextPageLink     = nextPageLink                                          
+                };
 
-            var linkedCollectionResource = new
-            {
-                value = shapedAuthorsWithLinks,
-                linkd = links
-            };
-            //Serialize the result as JSON
-            return Ok(linkedCollectionResource);
-            //return new JsonResult(authors); // JsonResult returns the given object as JSON
+                //Create a custom header
+                Response.Headers.Add("X-Pagination",
+                    Newtonsoft.Json.JsonConvert.SerializeObject(paginationMetadata));
+
+                return Ok(authors.ShapeData(authorsResourceParameters.Fields));
+            }
         }
         //todo /////////////////////////////////////////////////////////////////////
         
@@ -186,7 +209,8 @@ namespace Library.API.Controllers
 
         //todo ******************** POST Create One Author **************************
         [HttpPost(Name = "CreateAuthor")]                     //[FromBody is used to serialize the data from the request into the specified type
-        public IActionResult CreateAuthor([FromBody] AuthorForCreationDto author)
+        public IActionResult CreateAuthor([FromBody] AuthorForCreationDto author,
+                                        [FromHeader(Name = "Accept")] string mediaType)
         {
             if (author == null)
             {
@@ -210,17 +234,25 @@ namespace Library.API.Controllers
             // The Response will be the author just added but from the database itself after being added
             var authorToReturn = Mapper.Map<AuthorDto>(authorEntity);
 
-            var links = CreateLinksForAuthor(authorToReturn.Id, null);
+            //! HATEOAS is returned only if it requested explicity in the request Header
+            if (mediaType == "application/vnd.marvin.hateoas+json")
+            {
+                var links = CreateLinksForAuthor(authorToReturn.Id, null);
 
-            var linkedResourceToReturn = authorToReturn.ShapeData(null)
-                as IDictionary<string, object>;
+                var linkedResourceToReturn = authorToReturn.ShapeData(null)
+                    as IDictionary<string, object>;
 
-            linkedResourceToReturn.Add("links", links);
+                linkedResourceToReturn.Add("links", links);
 
-                                // Call the above get method using its name
-            return CreatedAtRoute("GetAuthor", 
-                new { id = linkedResourceToReturn["Id"] },
-                linkedResourceToReturn);
+                // Call the above get method using its name
+                return CreatedAtRoute("GetAuthor",
+                    new { id = linkedResourceToReturn["Id"] },
+                    linkedResourceToReturn);
+            }
+            else
+            {
+                return Ok(authorToReturn);
+            }
         }
         //todo //////////////////////////////////////////////////////////////////////
 

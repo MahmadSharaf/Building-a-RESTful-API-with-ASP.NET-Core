@@ -44,6 +44,15 @@ namespace Library.API
                 setupAction.ReturnHttpNotAcceptable = true; // No default output format if the requested format send is not supported a 406 error is returned
                 setupAction.OutputFormatters.Add(new XmlDataContractSerializerOutputFormatter());
                 setupAction.InputFormatters.Add(new XmlDataContractSerializerInputFormatter());
+
+                // Add custom header type
+                var jsonOutputFormatter = setupAction.OutputFormatters
+                    .OfType<JsonOutputFormatter>().FirstOrDefault();
+
+                if(jsonOutputFormatter != null)
+                {
+                    jsonOutputFormatter.SupportedMediaTypes.Add("application/vnd.marvin.hateoas+json");
+                }
             })
             .AddJsonOptions(options =>      // This is for resolving the casing in the request fields name, as instead of returning the fields with its original casing
                {                            // the fields are returned with upper-cased first letters
