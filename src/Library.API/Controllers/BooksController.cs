@@ -19,16 +19,19 @@ namespace Library.API.Controllers
     {
         private ILogger<BooksController> _logger;
         private ILibraryRepository _libraryRepository;
+        private IUrlHelper _urlHelper;
 
         public BooksController(ILibraryRepository libraryRepository,
-            ILogger<BooksController> logger)
-        {    //Loggers can also be injected in the constructor not only in the loggerFactory in startup.cs
-            _logger = logger;
+                               ILogger<BooksController> logger,
+                               IUrlHelper urlHelper)
+        {    
+            _logger = logger; //Loggers can also be injected in the constructor not only in the loggerFactory in startup.cs
             _libraryRepository = libraryRepository;
+            _urlHelper = urlHelper;
         }
 
         //todo *************** Get Books For Author ***************************
-        [HttpGet()]
+        [HttpGet(Name = "GetBooksForAuthor")]
         public IActionResult GetBooksForAuthor(Guid authorId)
         {
             var booksForAuthorFromRepo = _libraryRepository.GetBooksForAuthor(authorId);
@@ -37,7 +40,17 @@ namespace Library.API.Controllers
                 return NotFound();
 
             var books = Mapper.Map<IEnumerable<BookDto>>(booksForAuthorFromRepo);
-            return Ok(books);
+
+            books = books.Select(book => //Change each book from book to book with links
+            {
+                book = CreateLinksForBook(book);
+                return book;
+            });
+
+            // Create links
+            var wrapper = new LinkedCollectionResourceWrapperDto<BookDto>(books);
+
+            return Ok(CreateLinksForBooks(wrapper));
         }
         //todo ////////////////////////////////////////////////////////////////
 
@@ -54,12 +67,12 @@ namespace Library.API.Controllers
                 return NotFound();
             var book = Mapper.Map<BookDto>(bookForAuthorFromRepo);
 
-            return Ok(book);
+            return Ok(CreateLinksForBook(book));
         }
         //todo ////////////////////////////////////////////////////////////////
 
         //todo *************** POST Create Author Book ***************************
-        [HttpPost()]
+        [HttpPost(Name = "CreateBookForAuthor")]
         public IActionResult CreateAuthorBook(Guid authorId, [FromBody] BookForCreationDto book)
         {
             if (book == null)
@@ -92,12 +105,12 @@ namespace Library.API.Controllers
 
             return CreatedAtRoute("GetBookForAuthor",
                 new { authorId = authorId, bookId = bookToReturn.Id },//the values required for the routing
-                bookToReturn);//the content that will be returned by the response body
+                CreateLinksForBook(bookToReturn));//the content that will be returned by the response body
         }
         //todo ////////////////////////////////////////////////////////////////
 
         //todo *************** Delete one book for author ***************************
-        [HttpDelete("{bookId}")]
+        [HttpDelete("{bookId}", Name = "DeleteBookForAuthor")]
         public IActionResult DeleteBookForAuthor(Guid authorId, Guid bookId)
         {
             if (!_libraryRepository.AuthorExists(authorId))
@@ -118,7 +131,7 @@ namespace Library.API.Controllers
         //todo ////////////////////////////////////////////////////////////////
 
         //todo *************** PUT Update Book For Author ***************************
-        [HttpPut("{bookId}")]
+        [HttpPut("{bookId}", Name = "UpdateBookForAuthor")]
         public IActionResult UpdateBookForAuthor(Guid authorId, Guid bookId,
             [FromBody] BookForUpdateDto book)
         {
@@ -171,7 +184,7 @@ namespace Library.API.Controllers
         //todo ////////////////////////////////////////////////////////////////
 
         //todo *************** PATCH Partially Update Book For Author ***************************
-        [HttpPatch("{bookId}")]
+        [HttpPatch("{bookId}", Name = "PartiallyUpdateBookForAuthor")]
         public IActionResult PartiallyUpdateBookForAuthor(Guid authorId, Guid bookId,
             [FromBody] JsonPatchDocument<BookForUpdateDto> patchDoc)//JsonPatchDocument is used because the content header is Json-patch
         {
@@ -247,5 +260,34 @@ namespace Library.API.Controllers
         }
         //todo ////////////////////////////////////////////////////////////////
 
+        //todo *************** Create Links for a book ************************
+        private BookDto CreateLinksForBook(BookDto book)
+        {
+            book.Links.Add(new LinkDto(_urlHelper.Link("GetBookForAuthor", 
+                            new { id = book.Id }),
+                            "self", "GET"));
+            book.Links.Add(new LinkDto(_urlHelper.Link("DeleteBookForAuthor", 
+                            new { id = book.Id }),
+                            "delete_book", "DELETE"));
+            book.Links.Add(new LinkDto(_urlHelper.Link("UpdateBookForAuthor", 
+                            new { id = book.Id }),
+                            "update_book", "PUT"));
+            book.Links.Add(new LinkDto(_urlHelper.Link("PartiallyUpdateBookForAuthor", 
+                            new { id = book.Id }),
+                            "partially_update_book", "PATCH"));
+            return book;
+        }
+        //todo ////////////////////////////////////////////////////////////////
+
+        //todo *************** Create Links for books  ************************
+        private LinkedCollectionResourceWrapperDto<BookDto> CreateLinksForBooks(
+            LinkedCollectionResourceWrapperDto<BookDto> booksWrapper)
+        {
+            booksWrapper.Links.Add(
+                new LinkDto(_urlHelper.Link("GetBooksForAuthor", new { }),
+                "self", "GET"));
+
+            return booksWrapper;
+        }
     }
 }
