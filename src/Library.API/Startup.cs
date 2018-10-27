@@ -46,6 +46,16 @@ namespace Library.API
                 setupAction.InputFormatters.Add(new XmlDataContractSerializerInputFormatter());
 
                 // Add custom header type
+                var jsonInputFormatter = setupAction.OutputFormatters
+                    .OfType<JsonInputFormatter>().FirstOrDefault();
+
+                if(jsonInputFormatter != null)
+                {
+                    jsonInputFormatter.SupportedMediaTypes.Add("application/vnd.marvin.author.full+json");
+                    jsonInputFormatter.SupportedMediaTypes.Add("application/vnd.marvin.authorwithdateofdeath.full+json");
+                }
+                
+                // Add custom header type
                 var jsonOutputFormatter = setupAction.OutputFormatters
                     .OfType<JsonOutputFormatter>().FirstOrDefault();
 
@@ -160,9 +170,10 @@ namespace Library.API
                     .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
                      $"{src.FirstName} {src.LastName}"))
                     .ForMember(dest => dest.Age, opt => opt.MapFrom(src =>
-                     src.DateOfBirth.GetCurrentAge()));
+                     src.DateOfBirth.GetCurrentAge(src.DateOfDeath)));
                 cfg.CreateMap<Entities.Book, Model.BookDto>();
                 cfg.CreateMap< Model.AuthorForCreationDto, Entities.Author>(); //This mapping is used for input so the source is from the request to the repository
+                cfg.CreateMap< Model.AuthorForCreationWithDateOfDeathDto, Entities.Author>(); //This mapping is used for input so the source is from the request to the repository
                 cfg.CreateMap<Model.BookForCreationDto, Entities.Book>();
                 cfg.CreateMap<Model.BookForUpdateDto, Entities.Book>();
                 cfg.CreateMap<Entities.Book, Model.BookForUpdateDto>();
